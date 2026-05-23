@@ -8,12 +8,20 @@ let currentLanguage = localStorage.getItem('smart_chef_lang') || 'ru';
 let fridgeIngredients = JSON.parse(localStorage.getItem('smart_fridge_ingredients')) || [];
 let favorites = JSON.parse(localStorage.getItem('smart_chef_favorites')) || [];
 let apiKey = localStorage.getItem('smart_chef_gemini_api_key') || '';
-let dietaryPreferences = JSON.parse(localStorage.getItem('smart_chef_dietary_preferences')) || {
-  vegan: false,
-  vegetarian: false,
-  'gluten-free': false,
-  'low-carb': false
-};
+let dietaryPreferences = JSON.parse(localStorage.getItem('smart_chef_dietary_preferences'));
+if (!dietaryPreferences || typeof dietaryPreferences !== 'object' || Array.isArray(dietaryPreferences)) {
+  dietaryPreferences = {
+    vegan: false,
+    vegetarian: false,
+    'gluten-free': false,
+    'low-carb': false
+  };
+} else {
+  dietaryPreferences.vegan = !!dietaryPreferences.vegan;
+  dietaryPreferences.vegetarian = !!dietaryPreferences.vegetarian;
+  dietaryPreferences['gluten-free'] = !!dietaryPreferences['gluten-free'];
+  dietaryPreferences['low-carb'] = !!dietaryPreferences['low-carb'];
+}
 
 let currentTab = 'local'; // 'local' or 'ai'
 let selectedCategory = 'all';
@@ -465,17 +473,95 @@ function matchRecipes() {
   renderRecipesList(matched);
 }
 
+// --- Active Filters Helpers ---
+function getActiveFiltersString() {
+  const active = [];
+  if (selectedCategory !== 'all') {
+    const catName = i18n[currentLanguage]['cat_' + selectedCategory.replace(' ', '')] || selectedCategory;
+    active.push(catName);
+  }
+  if (searchQuery) active.push(`"${searchQuery}"`);
+  if (showFavoritesOnly) active.push(i18n[currentLanguage].favorites_tooltip);
+  if (dietaryPreferences.vegan) active.push(i18n[currentLanguage].diet_vegan);
+  if (dietaryPreferences.vegetarian) active.push(i18n[currentLanguage].diet_vegetarian);
+  if (dietaryPreferences['gluten-free']) active.push(i18n[currentLanguage].diet_glutenfree);
+  if (dietaryPreferences['low-carb']) active.push(i18n[currentLanguage].diet_lowcarb);
+  
+  return active.length > 0 ? active.join(', ') : i18n[currentLanguage].no_active_filters;
+}
+
+function resetAllFilters() {
+  selectedCategory = 'all';
+  searchQuery = '';
+  showFavoritesOnly = false;
+  dietaryPreferences = {
+    vegan: false,
+    vegetarian: false,
+    'gluten-free': false,
+    'low-carb': false
+  };
+  localStorage.setItem('smart_chef_dietary_preferences', JSON.stringify(dietaryPreferences));
+  
+  // Sync HTML inputs
+  const dietVegan = document.getElementById('diet-vegan');
+  const dietVegetarian = document.getElementById('diet-vegetarian');
+  const dietGlutenFree = document.getElementById('diet-gluten-free');
+  const dietLowCarb = document.getElementById('diet-low-carb');
+  if (dietVegan) dietVegan.checked = false;
+  if (dietVegetarian) dietVegetarian.checked = false;
+  if (dietGlutenFree) dietGlutenFree.checked = false;
+  if (dietLowCarb) dietLowCarb.checked = false;
+
+  const searchInput = document.getElementById('search-recipe-input');
+  if (searchInput) searchInput.value = '';
+
+  document.querySelectorAll('.category-pill').forEach(pill => {
+    pill.classList.toggle('active', pill.getAttribute('data-category') === 'all');
+  });
+
+  btnFavoritesToggle.classList.remove('active');
+  btnFavoritesToggle.style.color = '';
+  btnFavoritesToggle.style.borderColor = '';
+
+  matchRecipes();
+  showToast('toast_settings_saved', 'emerald');
+}
+
 // --- Render Match Cards Grid ---
 function renderRecipesList(list) {
   recipesGrid.innerHTML = '';
 
   if (list.length === 0) {
+    const activeFilters = getActiveFiltersString();
+    const hasActiveFilters = activeFilters !== i18n[currentLanguage].no_active_filters;
+    
+    let buttonHtml = '';
+    if (hasActiveFilters) {
+      buttonHtml = `
+        <button id="btn-reset-filters" class="btn-primary" style="margin: 1.5rem auto 0 auto; display: flex;">
+          ${i18n[currentLanguage].btn_reset_filters}
+        </button>
+      `;
+    }
+
     recipesGrid.innerHTML = `
       <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted);">
-        <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">${currentLanguage === 'ru' ? 'Рецепты не найдены.' : 'No recipes found matching your filters.'}</p>
-        <p style="font-size: 0.9rem;">${currentLanguage === 'ru' ? 'Попробуйте добавить другие продукты или изменить настройки!' : 'Try adding more ingredients to your fridge or adjusting your settings!'}</p>
+        <p style="font-size: 1.15rem; margin-bottom: 0.5rem; color: var(--text-bright);">
+          ${currentLanguage === 'ru' ? 'Рецепты не найдены.' : 'No recipes found matching your filters.'}
+        </p>
+        <p style="font-size: 0.95rem; margin-bottom: 0.5rem;">
+          ${i18n[currentLanguage].active_filters} <strong style="color: var(--primary);">${activeFilters}</strong>
+        </p>
+        <p style="font-size: 0.9rem;">
+          ${currentLanguage === 'ru' ? 'Попробуйте добавить другие продукты или изменить настройки!' : 'Try adding more ingredients to your fridge or adjusting your settings!'}
+        </p>
+        ${buttonHtml}
       </div>
     `;
+
+    if (hasActiveFilters) {
+      document.getElementById('btn-reset-filters')?.addEventListener('click', resetAllFilters);
+    }
     return;
   }
 

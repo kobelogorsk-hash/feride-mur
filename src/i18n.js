@@ -98,6 +98,11 @@ export const i18n = {
     toast_timer_finished: '⏰ Таймер завершен! Проверьте блюдо.',
     toast_timer_cancelled: 'Таймер отменен.',
     
+    // Filters empty states
+    active_filters: 'Активные фильтры:',
+    btn_reset_filters: 'Сбросить фильтры',
+    no_active_filters: 'нет',
+
     // Footer
     footer_text: '© 2026 Умный Шеф - Сделано для любителей вкусной еды. Работает офлайн и с ИИ.'
   },
@@ -200,6 +205,11 @@ export const i18n = {
     toast_timer_finished: '⏰ Cooking Step Timer Finished! Check your dish.',
     toast_timer_cancelled: 'Timer cancelled.',
     
+    // Filters empty states
+    active_filters: 'Active filters:',
+    btn_reset_filters: 'Reset Filters',
+    no_active_filters: 'none',
+
     // Footer
     footer_text: '© 2026 Smart Chef - Made for food lovers. Offline-ready & AI-powered PWA.'
   }
