@@ -1,4 +1,8 @@
 import { recipes } from './recipes.js';
+import { i18n } from './i18n.js';
+
+// --- i18n State ---
+let currentLanguage = localStorage.getItem('smart_chef_lang') || 'ru';
 
 // --- State Management ---
 let fridgeIngredients = JSON.parse(localStorage.getItem('smart_fridge_ingredients')) || [];
@@ -18,13 +22,25 @@ let showFavoritesOnly = false;
 let activeTimers = {}; // Key: "stepIndex-recipeId", Value: { intervalId, secondsLeft, totalSeconds }
 let aiGeneratedRecipe = null;
 let deferredPrompt = null;
+let suggestionPool = [];
 
-// Collect unique ingredients from local database for suggestions
-const suggestionPool = Array.from(
-  new Set(recipes.flatMap(r => r.ingredients.map(i => i.name.toLowerCase())))
-).sort();
+const quickAddTranslations = {
+  tomato: { ru: 'помидор', en: 'tomato' },
+  potato: { ru: 'картофель', en: 'potato' },
+  onion: { ru: 'лук', en: 'onion' },
+  garlic: { ru: 'чеснок', en: 'garlic' },
+  egg: { ru: 'яйцо', en: 'egg' },
+  cheese: { ru: 'сыр', en: 'cheese' },
+  chicken: { ru: 'курица', en: 'chicken' },
+  pasta: { ru: 'макароны', en: 'pasta' },
+  bread: { ru: 'хлеб', en: 'bread' },
+  milk: { ru: 'молоко', en: 'milk' },
+  apple: { ru: 'яблоко', en: 'apple' },
+  butter: { ru: 'сливочное масло', en: 'butter' }
+};
 
 // --- DOM References ---
+const langSelect = document.getElementById('lang-select');
 const fridgeInput = document.getElementById('fridge-input');
 const btnAddIngredient = document.getElementById('btn-add-ingredient');
 const autocompleteBox = document.getElementById('autocomplete-box');
@@ -86,6 +102,9 @@ window.addEventListener('DOMContentLoaded', () => {
   // Setup Event Listeners
   setupEventListeners();
   
+  // Translate UI texts
+  translateUI();
+  
   // Render initial UI
   renderFridge();
   updateAiKeyUi();
@@ -112,34 +131,79 @@ function registerServiceWorker() {
 
 // --- PWA Install Prompt Handler ---
 window.addEventListener('beforeinstallprompt', (e) => {
-  // Prevent Chrome 67 and earlier from automatically showing the prompt
   e.preventDefault();
-  // Stash the event so it can be triggered later.
   deferredPrompt = e;
-  // Update UI notify the user they can install the PWA
   btnInstall.style.display = 'flex';
 });
 
 btnInstall.addEventListener('click', async () => {
   if (!deferredPrompt) return;
-  // Show the prompt
   deferredPrompt.prompt();
-  // Wait for the user to respond to the prompt
   const { outcome } = await deferredPrompt.userChoice;
   console.log(`[PWA] User response to the install prompt: ${outcome}`);
-  // We've used the prompt, and can't use it again, discard it
   deferredPrompt = null;
   btnInstall.style.display = 'none';
 });
 
-window.addEventListener('appinstalled', (evt) => {
+window.addEventListener('appinstalled', () => {
   console.log('[PWA] Smart Chef was installed.');
-  showToast('Smart Chef installed successfully! 🍳', 'emerald');
+  showToast('toast_added', 'emerald', { name: 'Smart Chef App' });
   btnInstall.style.display = 'none';
 });
 
+// --- UI Translation Engine ---
+function translateUI() {
+  // Set dropdown selected value
+  langSelect.value = currentLanguage;
+
+  // Find all elements with data-i18n and replace text
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18n[currentLanguage][key]) {
+      el.innerHTML = i18n[currentLanguage][key];
+    }
+  });
+
+  // Handle placeholders
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (i18n[currentLanguage][key]) {
+      el.placeholder = i18n[currentLanguage][key];
+    }
+  });
+
+  // Handle titles (tooltips)
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.getAttribute('data-i18n-title');
+    if (i18n[currentLanguage][key]) {
+      el.title = i18n[currentLanguage][key];
+    }
+  });
+
+  // Update suggestions pool based on active language
+  updateSuggestionPool();
+}
+
+function updateSuggestionPool() {
+  suggestionPool = Array.from(
+    new Set(recipes.flatMap(r => r.ingredients.map(i => i.name[currentLanguage].toLowerCase())))
+  ).sort();
+}
+
 // --- Event Listeners Setup ---
 function setupEventListeners() {
+  // Language Selector
+  langSelect.addEventListener('change', (e) => {
+    currentLanguage = e.target.value;
+    localStorage.setItem('smart_chef_lang', currentLanguage);
+    translateUI();
+    renderFridge();
+    matchRecipes();
+    if (aiGeneratedRecipe) {
+      renderAiRecipeView();
+    }
+  });
+
   // Tabs Navigation
   tabLocal.addEventListener('click', () => switchTab('local'));
   tabAi.addEventListener('click', () => switchTab('ai'));
@@ -158,8 +222,11 @@ function setupEventListeners() {
   // Quick Add Buttons
   document.querySelectorAll('.btn-quick-add').forEach(btn => {
     btn.addEventListener('click', () => {
-      const item = btn.getAttribute('data-item');
-      addIngredient(item);
+      const itemKey = btn.getAttribute('data-item');
+      if (quickAddTranslations[itemKey]) {
+        const localizedName = quickAddTranslations[itemKey][currentLanguage];
+        addIngredient(localizedName);
+      }
     });
   });
 
@@ -184,7 +251,7 @@ function setupEventListeners() {
     btnFavoritesToggle.style.color = showFavoritesOnly ? '#ef4444' : '';
     btnFavoritesToggle.style.borderColor = showFavoritesOnly ? '#ef4444' : '';
     matchRecipes();
-    showToast(showFavoritesOnly ? 'Showing Favorites Only ❤️' : 'Showing All Recipes 📋');
+    showToast(showFavoritesOnly ? 'toast_fav_only' : 'toast_fav_all');
   });
 
   // Settings Modal controls
@@ -243,7 +310,7 @@ function addIngredient(name) {
     localStorage.setItem('smart_fridge_ingredients', JSON.stringify(fridgeIngredients));
     renderFridge();
     matchRecipes();
-    showToast(`Added ${name} to fridge! 🥚`, 'emerald');
+    showToast('toast_added', 'emerald', { name: name });
   }
 }
 
@@ -252,7 +319,7 @@ function removeIngredient(name) {
   localStorage.setItem('smart_fridge_ingredients', JSON.stringify(fridgeIngredients));
   renderFridge();
   matchRecipes();
-  showToast(`Removed ${name} 🗑️`);
+  showToast('toast_removed', 'orange', { name: name });
 }
 
 function clearFridge() {
@@ -261,7 +328,7 @@ function clearFridge() {
   localStorage.setItem('smart_fridge_ingredients', JSON.stringify(fridgeIngredients));
   renderFridge();
   matchRecipes();
-  showToast('Fridge cleared! ❄️', 'rose');
+  showToast('toast_cleared', 'rose');
 }
 
 function handleAutocomplete() {
@@ -285,6 +352,7 @@ function handleAutocomplete() {
   matches.slice(0, 5).forEach(match => {
     const div = document.createElement('div');
     div.className = 'suggestion-item';
+    
     // Highlight matching part
     const idx = match.indexOf(query);
     const highlighted = match.substring(0, idx) + 
@@ -312,7 +380,7 @@ function renderFridge() {
     emptyState.className = 'fridge-empty-state';
     emptyState.innerHTML = `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      <p>Your fridge is empty.<br>Type ingredients above or use quick-add buttons below!</p>
+      <p>${i18n[currentLanguage].fridge_empty}</p>
     `;
     fridgeInventory.appendChild(emptyState);
     return;
@@ -333,23 +401,29 @@ function renderFridge() {
 // --- Recipe Matching & Ranking Engine ---
 function matchRecipes() {
   let matched = recipes.map(recipe => {
-    const recipeIngredients = recipe.ingredients.map(i => i.name.toLowerCase());
-    
-    // Calculate matching count
-    const matchesCount = recipeIngredients.reduce((count, ing) => {
-      // Direct string containment check
-      const isAvailable = fridgeIngredients.some(f => f.includes(ing) || ing.includes(f));
+    // Collect ingredients names in both languages for smarter match fallback
+    const matchesCount = recipe.ingredients.reduce((count, ing) => {
+      const nameEn = ing.name.en.toLowerCase();
+      const nameRu = ing.name.ru.toLowerCase();
+
+      // Check if user has this ingredient in their fridge (checks either RU or EN)
+      const isAvailable = fridgeIngredients.some(f => {
+        const cleanF = f.toLowerCase();
+        return cleanF.includes(nameEn) || nameEn.includes(cleanF) || 
+               cleanF.includes(nameRu) || nameRu.includes(cleanF);
+      });
+
       return count + (isAvailable ? 1 : 0);
     }, 0);
 
-    const matchPercentage = recipeIngredients.length > 0 
-      ? Math.round((matchesCount / recipeIngredients.length) * 100) 
+    const matchPercentage = recipe.ingredients.length > 0 
+      ? Math.round((matchesCount / recipe.ingredients.length) * 100) 
       : 0;
 
     return {
       ...recipe,
       matchPercentage,
-      missingCount: recipeIngredients.length - matchesCount
+      missingCount: recipe.ingredients.length - matchesCount
     };
   });
 
@@ -359,7 +433,8 @@ function matchRecipes() {
     if (selectedCategory !== 'all' && recipe.category !== selectedCategory) return false;
     
     // Search match
-    if (searchQuery && !recipe.title.toLowerCase().includes(searchQuery)) return false;
+    const title = recipe.title[currentLanguage].toLowerCase();
+    if (searchQuery && !title.includes(searchQuery)) return false;
 
     // Favorites filter
     if (showFavoritesOnly && !favorites.includes(recipe.id)) return false;
@@ -397,8 +472,8 @@ function renderRecipesList(list) {
   if (list.length === 0) {
     recipesGrid.innerHTML = `
       <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted);">
-        <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">No recipes found matching your filters.</p>
-        <p style="font-size: 0.9rem;">Try adding more ingredients to your fridge or adjusting your settings!</p>
+        <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">${currentLanguage === 'ru' ? 'Рецепты не найдены.' : 'No recipes found matching your filters.'}</p>
+        <p style="font-size: 0.9rem;">${currentLanguage === 'ru' ? 'Попробуйте добавить другие продукты или изменить настройки!' : 'Try adding more ingredients to your fridge or adjusting your settings!'}</p>
       </div>
     `;
     return;
@@ -411,7 +486,7 @@ function renderRecipesList(list) {
     // Favorite active check
     const isFav = favorites.includes(recipe.id);
     
-    // Match badge HSL calculation
+    // Match badge status
     let matchClass = 'match-low';
     if (recipe.matchPercentage >= 75) {
       matchClass = 'match-high';
@@ -419,26 +494,33 @@ function renderRecipesList(list) {
       matchClass = 'match-mid';
     }
 
+    const title = recipe.title[currentLanguage];
+    const desc = recipe.description[currentLanguage];
+    const categoryName = i18n[currentLanguage]['cat_' + recipe.category.replace(' ', '')] || recipe.category;
+    const difficultyName = i18n[currentLanguage]['diff_' + recipe.difficulty] || recipe.difficulty;
+    const matchLabel = i18n[currentLanguage].card_match;
+    const minsLabel = i18n[currentLanguage].card_mins;
+
     card.innerHTML = `
       <div class="card-img-container">
-        <img class="card-img" src="${recipe.image}" alt="${recipe.title}" loading="lazy">
-        <span class="card-badge-category">${recipe.category}</span>
+        <img class="card-img" src="${recipe.image}" alt="${title}" loading="lazy">
+        <span class="card-badge-category">${categoryName}</span>
         <button class="card-badge-favorite ${isFav ? 'active' : ''}" data-id="${recipe.id}">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
         </button>
-        <span class="card-match-badge ${matchClass}">${recipe.matchPercentage}% Match</span>
+        <span class="card-match-badge ${matchClass}">${recipe.matchPercentage}% ${matchLabel}</span>
       </div>
       <div class="card-content">
-        <h3 class="card-title">${recipe.title}</h3>
-        <p class="card-desc">${recipe.description}</p>
+        <h3 class="card-title">${title}</h3>
+        <p class="card-desc">${desc}</p>
         <div class="card-meta">
           <span class="meta-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-            <span>${recipe.prepTime + recipe.cookTime} mins</span>
+            <span>${recipe.prepTime + recipe.cookTime} ${minsLabel}</span>
           </span>
           <span class="meta-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34M12 2v6"></path></svg>
-            <span>${recipe.difficulty}</span>
+            <span>${difficultyName}</span>
           </span>
         </div>
       </div>
@@ -464,10 +546,10 @@ function toggleFavorite(id) {
   const index = favorites.indexOf(id);
   if (index === -1) {
     favorites.push(id);
-    showToast('Recipe added to favorites! ❤️', 'emerald');
+    showToast('toast_added', 'emerald', { name: i18n[currentLanguage].favorites_tooltip });
   } else {
     favorites.splice(index, 1);
-    showToast('Recipe removed from favorites 🗑️');
+    showToast('toast_fav_removed');
   }
   localStorage.setItem('smart_chef_favorites', JSON.stringify(favorites));
   
@@ -481,32 +563,65 @@ function toggleFavorite(id) {
 
 // --- Recipe Detail Modal Controller ---
 function openRecipeDetails(recipe) {
-  modalBadge.textContent = recipe.category;
+  const isAIGenerated = recipe.id.startsWith('ai-generated');
+  
+  // Localized text mappings
+  const categoryText = isAIGenerated 
+    ? recipe.category 
+    : (i18n[currentLanguage]['cat_' + recipe.category.replace(' ', '')] || recipe.category);
+    
+  const difficultyText = isAIGenerated 
+    ? recipe.difficulty 
+    : (i18n[currentLanguage]['diff_' + recipe.difficulty] || recipe.difficulty);
+    
+  const title = typeof recipe.title === 'object' ? recipe.title[currentLanguage] : recipe.title;
+
+  modalBadge.textContent = categoryText;
   modalImg.src = recipe.image;
-  modalTitle.textContent = recipe.title;
+  modalTitle.textContent = title;
   modalPrep.textContent = `${recipe.prepTime}m`;
   modalCook.textContent = `${recipe.cookTime}m`;
   modalServings.textContent = recipe.servings;
-  modalDifficulty.textContent = recipe.difficulty;
+  modalDifficulty.textContent = difficultyText;
 
   // Render ingredients checklist
   modalIngredientsList.innerHTML = '';
   const missingItems = [];
 
   recipe.ingredients.forEach(ing => {
-    const isAvailable = fridgeIngredients.some(f => f.includes(ing.name.toLowerCase()) || ing.name.toLowerCase().includes(f));
+    // Check ingredient name
+    const ingName = typeof ing.name === 'object' ? ing.name[currentLanguage] : ing.name;
+    const ingAmount = typeof ing.amount === 'object' ? ing.amount[currentLanguage] : ing.amount;
+    
+    // Availability calculation
+    let isAvailable = false;
+    if (isAIGenerated) {
+      // For AI recipes, check matches loosely
+      isAvailable = fridgeIngredients.some(f => 
+        f.includes(ingName.toLowerCase()) || ingName.toLowerCase().includes(f)
+      );
+    } else {
+      // For local recipes, check both language matches
+      const nameEn = ing.name.en.toLowerCase();
+      const nameRu = ing.name.ru.toLowerCase();
+      isAvailable = fridgeIngredients.some(f => {
+        const cleanF = f.toLowerCase();
+        return cleanF.includes(nameEn) || nameEn.includes(cleanF) || 
+               cleanF.includes(nameRu) || nameRu.includes(cleanF);
+      });
+    }
+
     const label = document.createElement('label');
     label.className = `checklist-item ${isAvailable ? 'have' : 'missing'}`;
     label.innerHTML = `
       <input type="checkbox" ${isAvailable ? 'checked' : ''}>
-      <span><strong>${ing.amount}</strong> ${ing.name}</span>
+      <span><strong>${ingAmount}</strong> ${ingName}</span>
     `;
 
     if (!isAvailable) {
-      missingItems.push(`${ing.amount} ${ing.name}`);
+      missingItems.push(`${ingAmount} ${ingName}`);
     }
 
-    // Toggle cross out class on manual check
     const checkbox = label.querySelector('input');
     checkbox.addEventListener('change', () => {
       label.classList.toggle('checked', checkbox.checked);
@@ -525,20 +640,22 @@ function openRecipeDetails(recipe) {
 
   // Render instructions checklist
   modalInstructionsList.innerHTML = '';
-  recipe.instructions.forEach((step, idx) => {
+  
+  const stepsList = isAIGenerated ? recipe.instructions : recipe.instructions[currentLanguage];
+  
+  stepsList.forEach((step, idx) => {
     const stepDiv = document.createElement('div');
     stepDiv.className = `instruction-step ${idx === 0 ? 'active' : ''}`;
     stepDiv.dataset.index = idx;
     
-    // Check if step contains timer (e.g. "cook for 5 minutes", "bake for 30 minutes")
-    const timeMatch = step.match(/(\d+)\s*(?:-|to)?\s*(\d+)?\s*(min|minute|hour)/i);
+    // Check if step contains timer duration (checks "min", "мин", etc.)
+    const timeMatch = step.match(/(\d+)\s*(?:-|to|до)?\s*(\d+)?\s*(min|minute|hour|мин|час)/i);
     let timerHtml = '';
     
     if (timeMatch) {
-      // Use the higher limit if a range is given (e.g. 15-20 mins)
       const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : parseInt(timeMatch[1]);
       const durationType = timeMatch[3].toLowerCase();
-      const seconds = durationType.includes('hour') ? minutes * 3600 : minutes * 60;
+      const seconds = (durationType.includes('hour') || durationType.includes('час')) ? minutes * 3600 : minutes * 60;
       
       const timerKey = `${idx}-${recipe.id}`;
       if (activeTimers[timerKey]) {
@@ -548,9 +665,10 @@ function openRecipeDetails(recipe) {
           </div>
         `;
       } else {
+        const startText = i18n[currentLanguage].btn_start_timer.replace('{m}', minutes);
         timerHtml = `
           <button class="btn-timer" data-seconds="${seconds}" data-timer-key="${timerKey}">
-            ⏱️ Start ${minutes}m timer
+            ${startText}
           </button>
         `;
       }
@@ -562,39 +680,37 @@ function openRecipeDetails(recipe) {
       <div class="step-actions">${timerHtml}</div>
     `;
 
-    // Click step to cross it out and active next step
+    // Click step to cross it out
     stepDiv.addEventListener('click', (e) => {
-      // Do not trigger step completion if timer button is clicked
       if (e.target.closest('.btn-timer') || e.target.closest('.step-timer-active')) return;
       
       stepDiv.classList.toggle('completed');
       stepDiv.classList.remove('active');
       
-      // Auto highlight next step if completing
       if (stepDiv.classList.contains('completed')) {
         const nextStep = modalInstructionsList.querySelector(`.instruction-step[data-index="${idx + 1}"]`);
         if (nextStep) nextStep.classList.add('active');
       }
     });
 
-    // Hook up timer buttons
+    // Start timer click
     const timerBtn = stepDiv.querySelector('.btn-timer');
     if (timerBtn) {
       timerBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         const seconds = parseInt(timerBtn.dataset.seconds);
         const timerKey = timerBtn.dataset.timerKey;
-        startStepTimer(timerKey, seconds, stepDiv.querySelector('.step-actions'));
+        startStepTimer(timerKey, seconds, stepDiv.querySelector('.step-actions'), stepsList);
       });
     }
 
-    // Hook up active timer action button clicks (to pause/cancel)
+    // Cancel timer click
     const activeTimerWidget = stepDiv.querySelector('.step-timer-active');
     if (activeTimerWidget) {
       activeTimerWidget.addEventListener('click', (e) => {
         e.stopPropagation();
         const timerKey = activeTimerWidget.dataset.timerKey;
-        cancelStepTimer(timerKey, stepDiv.querySelector('.step-actions'), recipe.id, idx, timeMatch);
+        cancelStepTimer(timerKey, stepDiv.querySelector('.step-actions'), recipe.id, idx, stepsList);
       });
     }
 
@@ -605,7 +721,7 @@ function openRecipeDetails(recipe) {
 }
 
 // --- Inline Cooking Step Timer Functions ---
-function startStepTimer(timerKey, seconds, container) {
+function startStepTimer(timerKey, seconds, container, stepsList) {
   if (activeTimers[timerKey]) return;
 
   const timerState = {
@@ -616,7 +732,7 @@ function startStepTimer(timerKey, seconds, container) {
       updateTimerDisplay(timerKey);
 
       if (timerState.secondsLeft <= 0) {
-        triggerTimerFinished(timerKey);
+        triggerTimerFinished(timerKey, stepsList);
       }
     }, 1000)
   };
@@ -625,7 +741,7 @@ function startStepTimer(timerKey, seconds, container) {
   
   // Render active timer display
   container.innerHTML = `
-    <div class="step-timer-active" data-timer-key="${timerKey}" style="cursor: pointer;" title="Click to cancel timer">
+    <div class="step-timer-active" data-timer-key="${timerKey}" style="cursor: pointer;" title="${i18n[currentLanguage].timer_cancel_tooltip}">
       ⏱️ <span class="timer-display">${formatTime(seconds)}</span>
     </div>
   `;
@@ -633,16 +749,7 @@ function startStepTimer(timerKey, seconds, container) {
   // Re-bind click handler on active widget to cancel
   container.querySelector('.step-timer-active').addEventListener('click', (e) => {
     e.stopPropagation();
-    // Parse key to get indexes
-    const parts = timerKey.split('-');
-    const idx = parseInt(parts[0]);
-    const recipeId = parts.slice(1).join('-');
-    const recipe = recipes.find(r => r.id === recipeId) || aiGeneratedRecipe;
-    
-    // Find the original time matching details
-    const stepText = recipe.instructions[idx];
-    const timeMatch = stepText.match(/(\d+)\s*(?:-|to)?\s*(\d+)?\s*(min|minute|hour)/i);
-    cancelStepTimer(timerKey, container, recipeId, idx, timeMatch);
+    cancelStepTimer(timerKey, container, timerKey.split('-').slice(1).join('-'), parseInt(timerKey.split('-')[0]), stepsList);
   });
 }
 
@@ -656,7 +763,7 @@ function updateTimerDisplay(timerKey) {
   });
 }
 
-function triggerTimerFinished(timerKey) {
+function triggerTimerFinished(timerKey, stepsList) {
   const timer = activeTimers[timerKey];
   if (!timer) return;
 
@@ -670,7 +777,7 @@ function triggerTimerFinished(timerKey) {
   }
 
   // Visual Alert
-  showToast('⏰ Cooking Step Timer Finished! Check your dish.', 'rose');
+  showToast('toast_timer_finished', 'rose');
 
   // Reset widget container
   const widgets = document.querySelectorAll(`.step-timer-active[data-timer-key="${timerKey}"]`);
@@ -678,50 +785,52 @@ function triggerTimerFinished(timerKey) {
     const container = widget.parentElement;
     const parts = timerKey.split('-');
     const idx = parseInt(parts[0]);
-    const recipeId = parts.slice(1).join('-');
-    const recipe = recipes.find(r => r.id === recipeId) || aiGeneratedRecipe;
-    const stepText = recipe.instructions[idx];
-    const timeMatch = stepText.match(/(\d+)\s*(?:-|to)?\s*(\d+)?\s*(min|minute|hour)/i);
+    const stepText = stepsList[idx];
+    const timeMatch = stepText.match(/(\d+)\s*(?:-|to|до)?\s*(\d+)?\s*(min|minute|hour|мин|час)/i);
     
     const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : parseInt(timeMatch[1]);
     const durationType = timeMatch[3].toLowerCase();
-    const seconds = durationType.includes('hour') ? minutes * 3600 : minutes * 60;
+    const seconds = (durationType.includes('hour') || durationType.includes('час')) ? minutes * 3600 : minutes * 60;
 
+    const startText = i18n[currentLanguage].btn_start_timer.replace('{m}', minutes);
     container.innerHTML = `
       <button class="btn-timer" data-seconds="${seconds}" data-timer-key="${timerKey}">
-        ⏱️ Start ${minutes}m timer
+        ${startText}
       </button>
     `;
 
     container.querySelector('.btn-timer').addEventListener('click', (e) => {
       e.stopPropagation();
-      startStepTimer(timerKey, seconds, container);
+      startStepTimer(timerKey, seconds, container, stepsList);
     });
   });
 }
 
-function cancelStepTimer(timerKey, container, recipeId, idx, timeMatch) {
+function cancelStepTimer(timerKey, container, recipeId, idx, stepsList) {
   const timer = activeTimers[timerKey];
   if (!timer) return;
 
   clearInterval(timer.intervalId);
   delete activeTimers[timerKey];
 
+  const stepText = stepsList[idx];
+  const timeMatch = stepText.match(/(\d+)\s*(?:-|to|до)?\s*(\d+)?\s*(min|minute|hour|мин|час)/i);
   const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : parseInt(timeMatch[1]);
   const durationType = timeMatch[3].toLowerCase();
-  const seconds = durationType.includes('hour') ? minutes * 3600 : minutes * 60;
+  const seconds = (durationType.includes('hour') || durationType.includes('час')) ? minutes * 3600 : minutes * 60;
 
+  const startText = i18n[currentLanguage].btn_start_timer.replace('{m}', minutes);
   container.innerHTML = `
     <button class="btn-timer" data-seconds="${seconds}" data-timer-key="${timerKey}">
-      ⏱️ Start ${minutes}m timer
+      ${startText}
     </button>
   `;
 
   container.querySelector('.btn-timer').addEventListener('click', (e) => {
     e.stopPropagation();
-    startStepTimer(timerKey, seconds, container);
+    startStepTimer(timerKey, seconds, container, stepsList);
   });
-  showToast('Timer cancelled.');
+  showToast('toast_timer_cancelled');
 }
 
 function formatTime(seconds) {
@@ -748,7 +857,7 @@ function saveSettings() {
   localStorage.setItem('smart_chef_dietary_preferences', JSON.stringify(dietaryPreferences));
   
   modalSettings.style.display = 'none';
-  showToast('Settings saved successfully! ⚙️', 'emerald');
+  showToast('toast_settings_saved', 'emerald');
   
   updateAiKeyUi();
   matchRecipes();
@@ -767,11 +876,11 @@ function updateAiKeyUi() {
 // --- AI Recipe Generator via Google Gemini API ---
 async function generateAiRecipe() {
   if (!apiKey) {
-    showToast('Please set your Gemini API Key in the settings first.', 'rose');
+    showToast('toast_key_warn', 'rose');
     return;
   }
   if (fridgeIngredients.length === 0) {
-    showToast('Please add ingredients to your fridge first so the AI has something to cook with!', 'rose');
+    showToast('toast_no_ingredients', 'rose');
     return;
   }
 
@@ -786,24 +895,30 @@ async function generateAiRecipe() {
     ? `Strict dietary restrictions: The recipe MUST satisfy these diets: [${activeDiets.join(', ')}].`
     : '';
 
+  const languageReq = currentLanguage === 'ru' 
+    ? "The entire recipe response (title, description, category, ingredients name and amount, instructions) MUST be written in Russian language."
+    : "The entire recipe response (title, description, category, ingredients name and amount, instructions) MUST be written in English language.";
+
   const prompt = `You are a culinary alchemist and professional gourmet chef. 
 Create an amazing, feasible recipe using the ingredients available in the fridge: [${fridgeIngredients.join(', ')}].
 ${dietaryClause}
 You may assume basic pantry staples are available: salt, water, black pepper, standard cooking oil, and sugar.
 The recipe should be creative and delicious.
 
+${languageReq}
+
 Return a JSON object conforming EXACTLY to the following structure:
 {
   "id": "unique-ai-recipe-id",
-  "title": "A gourmet creative title",
-  "description": "A mouthwatering description of the dish",
+  "title": "A gourmet creative title in requested language",
+  "description": "A mouthwatering description of the dish in requested language",
   "category": "Main Course",
   "prepTime": 15,
   "cookTime": 25,
   "servings": 2,
   "difficulty": "Medium",
   "ingredients": [
-    { "name": "ingredient name", "amount": "e.g. 200g or 2 tbsp" }
+    { "name": "ingredient name in requested language", "amount": "amount in requested language" }
   ],
   "instructions": [
     "Step 1 containing a specific duration (e.g. boil for 10 minutes or simmer for 5 minutes)",
@@ -846,13 +961,7 @@ Return ONLY this raw JSON object. Do not include markdown code block syntax (lik
     const recipeObj = JSON.parse(resultText.trim());
 
     // Generate a beautiful food background image keyword from title
-    const searchKeyword = encodeURIComponent(recipeObj.title.split(' ').slice(-2).join(' '));
-    recipeObj.image = `https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=60`; // Default beautiful foodie flatlay
-    
-    // Attempt to override default image with search
-    if (recipeObj.title) {
-      recipeObj.image = `https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=60&sig=${Math.floor(Math.random() * 1000)}`;
-    }
+    recipeObj.image = `https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=60&sig=${Math.floor(Math.random() * 1000)}`;
 
     // Set a dynamic ID
     recipeObj.id = `ai-generated-${Date.now()}`;
@@ -862,12 +971,12 @@ Return ONLY this raw JSON object. Do not include markdown code block syntax (lik
     if (!aiGeneratedRecipe.tags) aiGeneratedRecipe.tags = ['ai-chef'];
     else aiGeneratedRecipe.tags.push('ai-chef');
 
-    showToast('AI Chef successfully conjured a recipe! 🔮', 'purple');
+    showToast('toast_ai_success', 'purple');
     renderAiRecipeView();
 
   } catch (err) {
     console.error('Failed to generate AI recipe: ', err);
-    showToast(`AI Chef failed to formulate recipe: ${err.message}`, 'rose');
+    showToast('toast_ai_failed', 'rose', { error: err.message });
     btnGenerateAiRecipe.style.display = 'flex';
   } finally {
     aiLoader.style.display = 'none';
@@ -882,12 +991,15 @@ function renderAiRecipeView() {
   }
 
   btnGenerateAiRecipe.style.display = 'flex';
-  btnGenerateAiRecipe.querySelector('span').textContent = 'Conjure a different AI Recipe';
+  btnGenerateAiRecipe.querySelector('span').textContent = i18n[currentLanguage].btn_regenerate_ai;
   
   const isFav = favorites.includes(aiGeneratedRecipe.id);
-  
+  const matchLabel = i18n[currentLanguage].card_match;
+  const minsLabel = i18n[currentLanguage].card_mins;
+  const magicTitle = i18n[currentLanguage].ai_magic_formula;
+
   aiRecipeResult.innerHTML = `
-    <h3 style="font-size: 1rem; color: var(--purple); text-transform: uppercase; margin-bottom: 1rem; text-align: left;">✦ Magic Formula</h3>
+    <h3 style="font-size: 1rem; color: var(--purple); text-transform: uppercase; margin-bottom: 1rem; text-align: left;">${magicTitle}</h3>
     <div class="recipe-card ai-recipe" style="max-width: 480px; margin: 0 auto; text-align: left;">
       <div class="card-img-container">
         <img class="card-img" src="${aiGeneratedRecipe.image}" alt="${aiGeneratedRecipe.title}">
@@ -895,7 +1007,7 @@ function renderAiRecipeView() {
         <button class="card-badge-favorite ${isFav ? 'active' : ''}" id="ai-favorite-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
         </button>
-        <span class="card-match-badge match-high" style="background: rgba(139, 92, 246, 0.85); border-color: var(--purple);">AI Chef</span>
+        <span class="card-match-badge match-high" style="background: rgba(139, 92, 246, 0.85); border-color: var(--purple);">${matchLabel} AI Chef</span>
       </div>
       <div class="card-content">
         <h3 class="card-title">${aiGeneratedRecipe.title}</h3>
@@ -903,7 +1015,7 @@ function renderAiRecipeView() {
         <div class="card-meta">
           <span class="meta-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-            <span>${aiGeneratedRecipe.prepTime + aiGeneratedRecipe.cookTime} mins</span>
+            <span>${aiGeneratedRecipe.prepTime + aiGeneratedRecipe.cookTime} ${minsLabel}</span>
           </span>
           <span class="meta-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.45 1-1 1H4v2h16v-2h-5c-.55 0-1-.45-1-1v-2.34M12 2v6"></path></svg>
@@ -932,8 +1044,15 @@ function renderAiRecipeView() {
 
 // --- Floating Toast Notifications ---
 let toastTimeout;
-function showToast(message, type = 'orange') {
+function showToast(msgKey, type = 'orange', replacements = {}) {
   clearTimeout(toastTimeout);
+  
+  let message = i18n[currentLanguage][msgKey] || msgKey;
+  
+  // Perform placeholder replacements
+  Object.keys(replacements).forEach(placeholder => {
+    message = message.replace(`{${placeholder}}`, replacements[placeholder]);
+  });
   
   toast.className = 'notification-toast'; // Reset
   toast.classList.add(type === 'rose' ? 'rose' : type === 'emerald' ? 'emerald' : type === 'purple' ? 'purple' : 'orange');

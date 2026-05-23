@@ -36,23 +36,29 @@
         <path d="M 400 120 L 407 142 L 429 150 L 407 158 L 400 180 L 393 158 L 371 150 L 393 142 Z" fill="#f59e0b" />
         <path d="M 90 120 L 94 134 L 108 138 L 94 142 L 90 156 L 86 142 L 72 138 L 86 134 Z" fill="#f59e0b" />
       </svg>
-      <span class="logo-text">Smart Chef</span>
+      <span class="logo-text" data-i18n="app_title">Smart Chef</span>
     </div>
     
     <div class="nav-controls">
+      <!-- Language Selector -->
+      <select id="lang-select" class="lang-select">
+        <option value="ru" selected>RU 🇷🇺</option>
+        <option value="en">EN 🇬🇧</option>
+      </select>
+
       <!-- Install App PWA button -->
       <button id="btn-install" class="btn-primary" style="display: none;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        <span>Install App</span>
+        <span data-i18n="btn_install">Install App</span>
       </button>
       
       <!-- Favorites filter -->
-      <button id="btn-favorites" class="btn-icon" title="View Favorite Recipes">
+      <button id="btn-favorites" class="btn-icon" title="View Favorite Recipes" data-i18n-title="favorites_tooltip">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
       </button>
       
       <!-- Settings Button -->
-      <button id="btn-settings" class="btn-icon" title="Settings (Gemini API & Diet)">
+      <button id="btn-settings" class="btn-icon" title="Settings" data-i18n-title="settings_tooltip">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
       </button>
     </div>
@@ -65,13 +71,13 @@
     <aside class="sidebar-fridge">
       <h2 class="sidebar-title">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="5" y1="10" x2="19" y2="10"></line><line x1="9" y1="5" x2="9" y2="7"></line><line x1="9" y1="15" x2="9" y2="17"></line></svg>
-        <span>My Fridge</span>
+        <span data-i18n="fridge_title">My Fridge</span>
       </h2>
       
       <!-- Input to add ingredient -->
       <div class="fridge-input-wrapper">
-        <input type="text" id="fridge-input" class="fridge-input" placeholder="Type ingredient (e.g. Tomato)..." autocomplete="off">
-        <button id="btn-add-ingredient" class="btn-primary" style="padding: 0.75rem 1rem;">Add</button>
+        <input type="text" id="fridge-input" class="fridge-input" placeholder="Type ingredient (e.g. Tomato)..." data-i18n-placeholder="fridge_placeholder" autocomplete="off">
+        <button id="btn-add-ingredient" class="btn-primary" style="padding: 0.75rem 1rem;" data-i18n="btn_add">Add</button>
         
         <!-- Suggestions box -->
         <div id="autocomplete-box" class="autocomplete-suggestions" style="display: none;"></div>
@@ -79,33 +85,30 @@
       
       <!-- Current ingredients container -->
       <div id="fridge-inventory" class="fridge-inventory">
-        <div class="fridge-empty-state">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-          <p>Your fridge is empty.<br>Type ingredients above or use quick-add buttons below!</p>
-        </div>
+        <!-- Injected via JS -->
       </div>
       
       <!-- Quick Add Section -->
       <div class="quick-add-section">
-        <h3 class="quick-add-title">Quick Add Staples</h3>
+        <h3 class="quick-add-title" data-i18n="quick_add_title">Quick Add Staples</h3>
         <div class="quick-add-grid">
-          <button class="btn-quick-add" data-item="tomato">🍅 Tomato</button>
-          <button class="btn-quick-add" data-item="potato">🥔 Potato</button>
-          <button class="btn-quick-add" data-item="onion">🧅 Onion</button>
-          <button class="btn-quick-add" data-item="garlic">🧄 Garlic</button>
-          <button class="btn-quick-add" data-item="egg">🥚 Egg</button>
-          <button class="btn-quick-add" data-item="cheese">🧀 Cheese</button>
-          <button class="btn-quick-add" data-item="chicken">🍗 Chicken</button>
-          <button class="btn-quick-add" data-item="pasta">🍝 Pasta</button>
-          <button class="btn-quick-add" data-item="bread">🍞 Bread</button>
-          <button class="btn-quick-add" data-item="milk">🥛 Milk</button>
-          <button class="btn-quick-add" data-item="apple">🍎 Apple</button>
-          <button class="btn-quick-add" data-item="butter">🧈 Butter</button>
+          <button class="btn-quick-add" data-item="tomato" data-i18n="quick_tomato">🍅 Tomato</button>
+          <button class="btn-quick-add" data-item="potato" data-i18n="quick_potato">🥔 Potato</button>
+          <button class="btn-quick-add" data-item="onion" data-i18n="quick_onion">🧅 Onion</button>
+          <button class="btn-quick-add" data-item="garlic" data-i18n="quick_garlic">🧄 Garlic</button>
+          <button class="btn-quick-add" data-item="egg" data-i18n="quick_egg">🥚 Egg</button>
+          <button class="btn-quick-add" data-item="cheese" data-i18n="quick_cheese">🧀 Cheese</button>
+          <button class="btn-quick-add" data-item="chicken" data-i18n="quick_chicken">🍗 Chicken</button>
+          <button class="btn-quick-add" data-item="pasta" data-i18n="quick_pasta">🍝 Pasta</button>
+          <button class="btn-quick-add" data-item="bread" data-i18n="quick_bread">🍞 Bread</button>
+          <button class="btn-quick-add" data-item="milk" data-i18n="quick_milk">🥛 Milk</button>
+          <button class="btn-quick-add" data-item="apple" data-i18n="quick_apple">🍎 Apple</button>
+          <button class="btn-quick-add" data-item="butter" data-i18n="quick_butter">🧈 Butter</button>
         </div>
       </div>
       
       <!-- Clear fridge -->
-      <button id="btn-clear-fridge" class="btn-clear-fridge">Clear Fridge Inventory</button>
+      <button id="btn-clear-fridge" class="btn-clear-fridge" data-i18n="btn_clear_fridge">Clear Fridge Inventory</button>
     </aside>
     
     <!-- Main Panel -->
@@ -116,25 +119,25 @@
         <div class="tabs-navigation">
           <button id="tab-local" class="tab-btn active">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            <span>Recipe Matching</span>
+            <span data-i18n="tab_matching">Recipe Matching</span>
           </button>
           <button id="tab-ai" class="tab-btn ai-tab">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-            <span>AI Magic Chef</span>
+            <span data-i18n="tab_ai">AI Magic Chef</span>
           </button>
         </div>
         
         <!-- Search & Category Filters (only shown for Recipe Matching) -->
         <div id="local-chef-filters" class="filter-bar">
-          <input type="text" id="search-recipe-input" class="form-input search-recipes" placeholder="Search recipe name...">
+          <input type="text" id="search-recipe-input" class="form-input search-recipes" placeholder="Search recipe name..." data-i18n-placeholder="search_placeholder">
           
           <div class="recipe-categories">
-            <button class="category-pill active" data-category="all">All</button>
-            <button class="category-pill" data-category="Breakfast">Breakfast</button>
-            <button class="category-pill" data-category="Salad">Salad</button>
-            <button class="category-pill" data-category="Soup">Soup</button>
-            <button class="category-pill" data-category="Main Course">Main Course</button>
-            <button class="category-pill" data-category="Dessert">Dessert</button>
+            <button class="category-pill active" data-category="all" data-i18n="cat_all">All</button>
+            <button class="category-pill" data-category="Breakfast" data-i18n="cat_Breakfast">Breakfast</button>
+            <button class="category-pill" data-category="Salad" data-i18n="cat_Salad">Salad</button>
+            <button class="category-pill" data-category="Soup" data-i18n="cat_Soup">Soup</button>
+            <button class="category-pill" data-category="Main Course" data-i18n="cat_MainCourse">Main Course</button>
+            <button class="category-pill" data-category="Dessert" data-i18n="cat_Dessert">Dessert</button>
           </div>
         </div>
       </div>
@@ -149,26 +152,26 @@
       <!-- AI Recipe Section (AI Chef) -->
       <section id="ai-recipes-section" class="ai-panel">
         <div class="ai-header-content">
-          <h2 class="ai-title">AI Culinary Alchemist</h2>
-          <p class="ai-desc">Let the AI Chef invent a gourmet recipe customized exactly around the ingredients in your fridge, taking your dietary restrictions into account.</p>
+          <h2 class="ai-title" data-i18n="ai_title">AI Culinary Alchemist</h2>
+          <p class="ai-desc" data-i18n="ai_desc">Let the AI Chef invent a gourmet recipe customized exactly around the ingredients in your fridge, taking your dietary restrictions into account.</p>
         </div>
         
         <!-- Warning if no API Key -->
         <div id="ai-key-warning" class="ai-key-warning" style="display: none;">
-          <p>⚠️ <strong>Gemini API Key Needed</strong>: To use the AI Chef, please enter your Gemini API Key in the settings.</p>
-          <button id="btn-open-settings-warning" class="btn-primary" style="background: var(--purple); font-size: 0.85rem; padding: 0.4rem 0.8rem; align-self: center;">Configure API Key</button>
+          <p>⚠️ <span data-i18n="ai_key_warning">Gemini API Key Needed: To use the AI Chef, please enter your Gemini API Key in the settings.</span></p>
+          <button id="btn-open-settings-warning" class="btn-primary" style="background: var(--purple); font-size: 0.85rem; padding: 0.4rem 0.8rem; align-self: center;" data-i18n="btn_configure_key">Configure API Key</button>
         </div>
         
         <!-- Action Button -->
         <button id="btn-generate-ai-recipe" class="btn-ai-generate">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          <span>Conjure AI Recipe</span>
+          <span data-i18n="btn_generate_ai">Conjure AI Recipe</span>
         </button>
         
         <!-- Magic Loading Indicator -->
         <div id="ai-loader" class="ai-loader">
           <div class="loader-spark"></div>
-          <div class="loader-text">Whispering to ingredients, composing recipe...</div>
+          <div class="loader-text" data-i18n="ai_loader">Whispering to ingredients, composing recipe...</div>
         </div>
         
         <!-- Generated Recipe Result Area -->
@@ -182,7 +185,7 @@
 
   <!-- Foot-note -->
   <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.8rem; border-top: 1px solid var(--border); margin-top: auto; backdrop-filter: var(--backdrop-blur);">
-    <p>© 2026 Smart Chef - Made for food lovers. Offline-ready & AI-powered PWA.</p>
+    <p data-i18n="footer_text">© 2026 Smart Chef - Made for food lovers. Offline-ready & AI-powered PWA.</p>
   </footer>
 
   <!-- Recipe Details Modal -->
@@ -204,23 +207,23 @@
       <div class="modal-body">
         <!-- Metadata Row -->
         <div class="recipe-details-meta">
-          <div>Prep Time: <strong id="modal-prep">10m</strong></div>
-          <div>Cook Time: <strong id="modal-cook">15m</strong></div>
-          <div>Servings: <strong id="modal-servings">2</strong></div>
-          <div>Difficulty: <strong id="modal-difficulty">Easy</strong></div>
+          <div><span data-i18n="modal_prep">Prep Time:</span> <strong id="modal-prep">10m</strong></div>
+          <div><span data-i18n="modal_cook">Cook Time:</span> <strong id="modal-cook">15m</strong></div>
+          <div><span data-i18n="modal_servings">Servings:</span> <strong id="modal-servings">2</strong></div>
+          <div><span data-i18n="modal_difficulty">Difficulty:</span> <strong id="modal-difficulty">Easy</strong></div>
         </div>
         
         <!-- Split View: Ingredients & Instructions -->
         <div class="recipe-grid-two-col">
           <!-- Ingredients Checklist Column -->
           <div class="ingredients-section">
-            <h3 class="section-subtitle">Ingredients Checklist</h3>
+            <h3 class="section-subtitle" data-i18n="modal_ingredients">Ingredients Checklist</h3>
             <div id="modal-ingredients-list" style="display: flex; flex-direction: column; gap: 0.6rem;">
               <!-- Injected checkboxes -->
             </div>
             
             <div id="shopping-list-container" style="margin-top: 1rem; display: none;">
-              <h4 style="font-size: 0.9rem; color: var(--rose); margin-bottom: 0.5rem;">Missing (Shopping List):</h4>
+              <h4 id="shopping-list-header" style="font-size: 0.9rem; color: var(--rose); margin-bottom: 0.5rem;" data-i18n="modal_missing">Missing (Shopping List):</h4>
               <ul id="shopping-list" style="padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.25rem;">
                 <!-- Missing items injected here -->
               </ul>
@@ -229,7 +232,7 @@
           
           <!-- Instructions Step-by-Step Column -->
           <div class="instructions-section">
-            <h3 class="section-subtitle">Cooking Instructions</h3>
+            <h3 class="section-subtitle" data-i18n="modal_instructions">Cooking Instructions</h3>
             <div id="modal-instructions-list" style="display: flex; flex-direction: column; gap: 0.8rem;">
               <!-- Injected steps -->
             </div>
@@ -243,7 +246,7 @@
   <div id="modal-settings" class="modal-overlay">
     <div class="modal-container" style="max-width: 500px;">
       <div class="modal-header">
-        <h2 class="modal-title">Preferences & API Configuration</h2>
+        <h2 class="modal-title" data-i18n="settings_title">Preferences & API Configuration</h2>
         <button class="modal-close" id="btn-close-settings">&times;</button>
       </div>
       <div class="modal-body">
@@ -251,35 +254,35 @@
           
           <!-- Gemini API key -->
           <div class="form-group">
-            <label for="input-api-key" class="form-label">Google Gemini API Key</label>
+            <label for="input-api-key" class="form-label" data-i18n="settings_api_label">Google Gemini API Key</label>
             <input type="password" id="input-api-key" class="form-input" placeholder="AIzaSy...">
-            <span style="font-size: 0.75rem; color: var(--text-muted);">Get a free API Key from the <a href="https://aistudio.google.com/" target="_blank" style="color: var(--primary); text-decoration: underline;">Google AI Studio</a>. Key is saved locally in your browser.</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted);" data-i18n="settings_api_help">Get a free API Key from the <a href="https://aistudio.google.com/" target="_blank" style="color: var(--primary); text-decoration: underline;">Google AI Studio</a>. Key is saved locally in your browser.</span>
           </div>
           
           <!-- Dietary Preferences -->
           <div class="form-group">
-            <label class="form-label">Dietary Restrictions</label>
+            <label class="form-label" data-i18n="settings_diet_label">Dietary Restrictions</label>
             <div class="diet-options-grid">
               <label class="diet-checkbox">
                 <input type="checkbox" id="diet-vegan" value="vegan">
-                <span>Vegan 🌿</span>
+                <span data-i18n="diet_vegan">Vegan 🌿</span>
               </label>
               <label class="diet-checkbox">
                 <input type="checkbox" id="diet-vegetarian" value="vegetarian">
-                <span>Vegetarian 🥗</span>
+                <span data-i18n="diet_vegetarian">Vegetarian 🥗</span>
               </label>
               <label class="diet-checkbox">
                 <input type="checkbox" id="diet-gluten-free" value="gluten-free">
-                <span>Gluten-Free 🌾</span>
+                <span data-i18n="diet_glutenfree">Gluten-Free 🌾</span>
               </label>
               <label class="diet-checkbox">
                 <input type="checkbox" id="diet-low-carb" value="low-carb">
-                <span>Low Carb 🥩</span>
+                <span data-i18n="diet_lowcarb">Low Carb 🥩</span>
               </label>
             </div>
           </div>
           
-          <button id="btn-save-settings" class="btn-primary" style="margin-top: 1rem; width: 100%; justify-content: center;">Save Configuration</button>
+          <button id="btn-save-settings" class="btn-primary" style="margin-top: 1rem; width: 100%; justify-content: center;" data-i18n="btn_save_settings">Save Configuration</button>
         </form>
       </div>
     </div>
