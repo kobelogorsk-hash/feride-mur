@@ -1,0 +1,18 @@
+{
+  "name": "Smart Chef: Culinary Alchemy",
+  "short_name": "Smart Chef",
+  "description": "Generate amazing recipes from ingredients you already have, powered by offline database and Gemini AI.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#f97316",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

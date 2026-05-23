@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- SEO Meta Tags -->
+  <title>Smart Chef: Culinary Alchemy PWA</title>
+  <meta name="description" content="An interactive smart recipe generator. Manage your virtual fridge, find matching recipes offline, or generate unique dishes using Gemini AI. Works fully offline.">
+  <meta name="theme-color" content="#f97316">
+  
+  <!-- Icons & Manifest -->
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icon.svg">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo-container">
+      <svg class="logo-icon" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#f97316" />
+            <stop offset="100%" stop-color="#f43f5e" />
+          </linearGradient>
+        </defs>
+        <path d="M 120 400 C 120 370, 392 370, 392 400 C 392 425, 120 425, 120 400 Z" fill="url(#logo-grad)" />
+        <rect x="150" y="405" width="212" height="30" rx="6" fill="#ffffff" />
+        <path d="M 120 380 C 70 360, 50 280, 120 250 C 90 180, 190 130, 256 200 C 322 130, 422 180, 392 250 C 462 280, 442 360, 392 380 Z" fill="url(#logo-grad)" />
+        <path d="M 140 360 C 95 345, 80 290, 140 265 C 115 200, 200 160, 256 220 C 312 160, 397 200, 372 265 C 432 290, 417 345, 372 360 Z" fill="#ffffff" opacity="0.2" />
+        <path d="M 400 120 L 407 142 L 429 150 L 407 158 L 400 180 L 393 158 L 371 150 L 393 142 Z" fill="#f59e0b" />
+        <path d="M 90 120 L 94 134 L 108 138 L 94 142 L 90 156 L 86 142 L 72 138 L 86 134 Z" fill="#f59e0b" />
+      </svg>
+      <span class="logo-text">Smart Chef</span>
+    </div>
+    
+    <div class="nav-controls">
+      <!-- Install App PWA button -->
+      <button id="btn-install" class="btn-primary" style="display: none;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        <span>Install App</span>
+      </button>
+      
+      <!-- Favorites filter -->
+      <button id="btn-favorites" class="btn-icon" title="View Favorite Recipes">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+      </button>
+      
+      <!-- Settings Button -->
+      <button id="btn-settings" class="btn-icon" title="Settings (Gemini API & Diet)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- App Body Layout -->
+  <div class="app-container">
+    
+    <!-- Sidebar: Fridge Panel -->
+    <aside class="sidebar-fridge">
+      <h2 class="sidebar-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="5" y1="10" x2="19" y2="10"></line><line x1="9" y1="5" x2="9" y2="7"></line><line x1="9" y1="15" x2="9" y2="17"></line></svg>
+        <span>My Fridge</span>
+      </h2>
+      
+      <!-- Input to add ingredient -->
+      <div class="fridge-input-wrapper">
+        <input type="text" id="fridge-input" class="fridge-input" placeholder="Type ingredient (e.g. Tomato)..." autocomplete="off">
+        <button id="btn-add-ingredient" class="btn-primary" style="padding: 0.75rem 1rem;">Add</button>
+        
+        <!-- Suggestions box -->
+        <div id="autocomplete-box" class="autocomplete-suggestions" style="display: none;"></div>
+      </div>
+      
+      <!-- Current ingredients container -->
+      <div id="fridge-inventory" class="fridge-inventory">
+        <div class="fridge-empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <p>Your fridge is empty.<br>Type ingredients above or use quick-add buttons below!</p>
+        </div>
+      </div>
+      
+      <!-- Quick Add Section -->
+      <div class="quick-add-section">
+        <h3 class="quick-add-title">Quick Add Staples</h3>
+        <div class="quick-add-grid">
+          <button class="btn-quick-add" data-item="tomato">🍅 Tomato</button>
+          <button class="btn-quick-add" data-item="potato">🥔 Potato</button>
+          <button class="btn-quick-add" data-item="onion">🧅 Onion</button>
+          <button class="btn-quick-add" data-item="garlic">🧄 Garlic</button>
+          <button class="btn-quick-add" data-item="egg">🥚 Egg</button>
+          <button class="btn-quick-add" data-item="cheese">🧀 Cheese</button>
+          <button class="btn-quick-add" data-item="chicken">🍗 Chicken</button>
+          <button class="btn-quick-add" data-item="pasta">🍝 Pasta</button>
+          <button class="btn-quick-add" data-item="bread">🍞 Bread</button>
+          <button class="btn-quick-add" data-item="milk">🥛 Milk</button>
+          <button class="btn-quick-add" data-item="apple">🍎 Apple</button>
+          <button class="btn-quick-add" data-item="butter">🧈 Butter</button>
+        </div>
+      </div>
+      
+      <!-- Clear fridge -->
+      <button id="btn-clear-fridge" class="btn-clear-fridge">Clear Fridge Inventory</button>
+    </aside>
+    
+    <!-- Main Panel -->
+    <main class="main-panel">
+      
+      <!-- Tab Selector & Core Filter controls -->
+      <div class="control-hub">
+        <div class="tabs-navigation">
+          <button id="tab-local" class="tab-btn active">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span>Recipe Matching</span>
+          </button>
+          <button id="tab-ai" class="tab-btn ai-tab">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <span>AI Magic Chef</span>
+          </button>
+        </div>
+        
+        <!-- Search & Category Filters (only shown for Recipe Matching) -->
+        <div id="local-chef-filters" class="filter-bar">
+          <input type="text" id="search-recipe-input" class="form-input search-recipes" placeholder="Search recipe name...">
+          
+          <div class="recipe-categories">
+            <button class="category-pill active" data-category="all">All</button>
+            <button class="category-pill" data-category="Breakfast">Breakfast</button>
+            <button class="category-pill" data-category="Salad">Salad</button>
+            <button class="category-pill" data-category="Soup">Soup</button>
+            <button class="category-pill" data-category="Main Course">Main Course</button>
+            <button class="category-pill" data-category="Dessert">Dessert</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Recipes Grid Section (Local Chef) -->
+      <section id="local-recipes-section">
+        <div id="recipes-grid" class="recipes-grid">
+          <!-- Recipe cards are injected here dynamically -->
+        </div>
+      </section>
+      
+      <!-- AI Recipe Section (AI Chef) -->
+      <section id="ai-recipes-section" class="ai-panel">
+        <div class="ai-header-content">
+          <h2 class="ai-title">AI Culinary Alchemist</h2>
+          <p class="ai-desc">Let the AI Chef invent a gourmet recipe customized exactly around the ingredients in your fridge, taking your dietary restrictions into account.</p>
+        </div>
+        
+        <!-- Warning if no API Key -->
+        <div id="ai-key-warning" class="ai-key-warning" style="display: none;">
+          <p>⚠️ <strong>Gemini API Key Needed</strong>: To use the AI Chef, please enter your Gemini API Key in the settings.</p>
+          <button id="btn-open-settings-warning" class="btn-primary" style="background: var(--purple); font-size: 0.85rem; padding: 0.4rem 0.8rem; align-self: center;">Configure API Key</button>
+        </div>
+        
+        <!-- Action Button -->
+        <button id="btn-generate-ai-recipe" class="btn-ai-generate">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span>Conjure AI Recipe</span>
+        </button>
+        
+        <!-- Magic Loading Indicator -->
+        <div id="ai-loader" class="ai-loader">
+          <div class="loader-spark"></div>
+          <div class="loader-text">Whispering to ingredients, composing recipe...</div>
+        </div>
+        
+        <!-- Generated Recipe Result Area -->
+        <div id="ai-recipe-result" style="width: 100%; display: none;">
+          <!-- Custom glowing generated recipe card gets rendered here -->
+        </div>
+      </section>
+      
+    </main>
+  </div>
+
+  <!-- Foot-note -->
+  <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.8rem; border-top: 1px solid var(--border); margin-top: auto; backdrop-filter: var(--backdrop-blur);">
+    <p>© 2026 Smart Chef - Made for food lovers. Offline-ready & AI-powered PWA.</p>
+  </footer>
+
+  <!-- Recipe Details Modal -->
+  <div id="modal-recipe-details" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <span class="recipe-details-category" id="modal-badge">Main Course</span>
+        <button class="modal-close" id="btn-close-details">&times;</button>
+      </div>
+      
+      <!-- Hero Header Image -->
+      <div class="recipe-details-hero">
+        <img id="modal-img" src="" alt="Recipe image" class="recipe-details-img">
+        <div class="recipe-details-overlay">
+          <h2 class="recipe-details-title" id="modal-title">Recipe Title</h2>
+        </div>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Metadata Row -->
+        <div class="recipe-details-meta">
+          <div>Prep Time: <strong id="modal-prep">10m</strong></div>
+          <div>Cook Time: <strong id="modal-cook">15m</strong></div>
+          <div>Servings: <strong id="modal-servings">2</strong></div>
+          <div>Difficulty: <strong id="modal-difficulty">Easy</strong></div>
+        </div>
+        
+        <!-- Split View: Ingredients & Instructions -->
+        <div class="recipe-grid-two-col">
+          <!-- Ingredients Checklist Column -->
+          <div class="ingredients-section">
+            <h3 class="section-subtitle">Ingredients Checklist</h3>
+            <div id="modal-ingredients-list" style="display: flex; flex-direction: column; gap: 0.6rem;">
+              <!-- Injected checkboxes -->
+            </div>
+            
+            <div id="shopping-list-container" style="margin-top: 1rem; display: none;">
+              <h4 style="font-size: 0.9rem; color: var(--rose); margin-bottom: 0.5rem;">Missing (Shopping List):</h4>
+              <ul id="shopping-list" style="padding-left: 1.25rem; font-size: 0.85rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.25rem;">
+                <!-- Missing items injected here -->
+              </ul>
+            </div>
+          </div>
+          
+          <!-- Instructions Step-by-Step Column -->
+          <div class="instructions-section">
+            <h3 class="section-subtitle">Cooking Instructions</h3>
+            <div id="modal-instructions-list" style="display: flex; flex-direction: column; gap: 0.8rem;">
+              <!-- Injected steps -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="modal-settings" class="modal-overlay">
+    <div class="modal-container" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2 class="modal-title">Preferences & API Configuration</h2>
+        <button class="modal-close" id="btn-close-settings">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="settings-form" class="settings-form" onsubmit="event.preventDefault();">
+          
+          <!-- Gemini API key -->
+          <div class="form-group">
+            <label for="input-api-key" class="form-label">Google Gemini API Key</label>
+            <input type="password" id="input-api-key" class="form-input" placeholder="AIzaSy...">
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Get a free API Key from the <a href="https://aistudio.google.com/" target="_blank" style="color: var(--primary); text-decoration: underline;">Google AI Studio</a>. Key is saved locally in your browser.</span>
+          </div>
+          
+          <!-- Dietary Preferences -->
+          <div class="form-group">
+            <label class="form-label">Dietary Restrictions</label>
+            <div class="diet-options-grid">
+              <label class="diet-checkbox">
+                <input type="checkbox" id="diet-vegan" value="vegan">
+                <span>Vegan 🌿</span>
+              </label>
+              <label class="diet-checkbox">
+                <input type="checkbox" id="diet-vegetarian" value="vegetarian">
+                <span>Vegetarian 🥗</span>
+              </label>
+              <label class="diet-checkbox">
+                <input type="checkbox" id="diet-gluten-free" value="gluten-free">
+                <span>Gluten-Free 🌾</span>
+              </label>
+              <label class="diet-checkbox">
+                <input type="checkbox" id="diet-low-carb" value="low-carb">
+                <span>Low Carb 🥩</span>
+              </label>
+            </div>
+          </div>
+          
+          <button id="btn-save-settings" class="btn-primary" style="margin-top: 1rem; width: 100%; justify-content: center;">Save Configuration</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications Toast -->
+  <div id="notification-toast" class="notification-toast">
+    <span id="notification-icon">🔔</span>
+    <div id="notification-message" class="notification-message">Notification message here</div>
+  </div>
+
+  <!-- Audio asset for timers -->
+  <audio id="timer-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav" preload="auto"></audio>
+
+  <!-- JavaScript Entry Point -->
+  <script type="module" src="./src/main.js"></script>
+
+</body>
+</html>
